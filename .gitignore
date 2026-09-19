@@ -1,3 +1,5 @@
 .venv/
 .vercel/
 .impeccable/
+__pycache__/
+*.pyc

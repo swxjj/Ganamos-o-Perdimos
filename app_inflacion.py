@@ -59,43 +59,9 @@ col_izq, col_der = st.columns([1,2])
 with col_izq:
     st.subheader("Configurá tu Análisis")
     # input "asigned" social class
-    clase_s = st.segmented_control("Clase Social", options = ['Alta', 'Media', 'Baja', 'No sé'], default=None)
+    clase_s = st.segmented_control("Clase Social", options = ['Alta', 'Media', 'Baja'], default=None)
     # creo variable vacía que guarde la elección
-    clase_final = ""
-    # display the selected class
-    if clase_s is None:
-        pass
-    elif clase_s != 'No sé':
-        clase_final = clase_s
-    else:
-        st.markdown("""
-            <style>
-                @keyframes fadeSlideUp {
-                    0% { opacity: 0; transform: translateY(15px); }
-                    100% { opacity: 1; transform: translateY(0); }
-                }
-            
-                [data-testid="stSlider"], 
-                [data-testid="stNumberInput"], 
-                [data-testid="stMetric"] {
-                    animation: fadeSlideUp 0.6s ease-out forwards;
-                }
-            </style>
-        """, unsafe_allow_html=True)
-        col_ingreso, col_personas = st.columns(2)
-        with col_ingreso:
-          salario = st.slider("Ingrese su salario familiar estimado", min_value=100000, max_value=10000000, value=1000000, step=100000, format="$%d")
-        with col_personas:  
-          personas = st.slider("Ingrese la cantidad de personas en su hogar", min_value=1, max_value=10, value=1, step=1)
-        if salario/personas > df_all['Costo_Canasta'].max()*3.5:
-            st.write(f"Su clase es Alta")
-            clase_final = "Alta"
-        elif salario/personas < df_all['Costo_Canasta'].max()*1.2:
-            st.write(f"Su clase es Baja")
-            clase_final = "Baja"
-        else:
-            st.write(f"Su clase es Media")
-            clase_final = "Media"
+    clase_final = clase_s if clase_s is not None else ""
 
     salario_s = st.segmented_control("Origen de los Ingresos", options = ['Público', 'Privado', 'Informal','No sé'], default=None)
     # creo variable vacía que guarde la elección

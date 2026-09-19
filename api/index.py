@@ -4,6 +4,7 @@ import math
 import os
 import pandas as pd
 import requests
+import time
 from urllib.parse import parse_qs, urlparse
 
 
@@ -53,27 +54,81 @@ SALARIO_MAP = {
 
 CLASES_VALIDAS = {'Alta', 'Media', 'Baja'}
 
+# ── Caching ──────────────────────────────────────────────────────────────────
+CACHE_TTL = 12 * 3600  # 12 horas
+_cached_df = None
+_cache_time = 0.0
+
+def _get_cache_path():
+    if os.path.exists('/tmp'):
+        return '/tmp/indec_series_cache.json'
+    tmp_dir = os.environ.get('TEMP') or os.environ.get('TMP') or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(tmp_dir, 'indec_series_cache.json')
+
 # ── Helpers de datos ─────────────────────────────────────────────────────────
 
+_cached_pond = None
+
 def load_ponderaciones():
-    """Carga el Excel de ponderaciones desde la raíz del proyecto."""
+    """Carga el Excel de ponderaciones desde la raíz del proyecto con caché en memoria."""
+    global _cached_pond
+    if _cached_pond is not None:
+        return _cached_pond
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     path = os.path.join(root, 'ponderaciones.xlsx')
     df = pd.read_excel(path)
     df.set_index('Rubro', inplace=True)
-    return df
+    _cached_pond = df
+    return _cached_pond
 
 
 def fetch_indec():
-    """Descarga los índices del INDEC y devuelve un DataFrame indexado por fecha."""
+    """Descarga los índices del INDEC o los recupera de la caché en memoria/disco."""
+    global _cached_df, _cache_time
+    now = time.time()
+
+    # 1. En memoria
+    if _cached_df is not None and (now - _cache_time) < CACHE_TTL:
+        return _cached_df
+
+    # 2. En disco
+    cache_path = _get_cache_path()
+    if os.path.exists(cache_path):
+        try:
+            mtime = os.path.getmtime(cache_path)
+            if (now - mtime) < CACHE_TTL:
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    datos = json.load(f)
+                df = pd.DataFrame(datos['data'], columns=COLUMNAS)
+                df.set_index('fecha', inplace=True)
+                df.index = pd.to_datetime(df.index)
+                df = df.astype(float)
+                _cached_df = df
+                _cache_time = mtime
+                return _cached_df
+        except Exception:
+            pass
+
+    # 3. Descarga remota
     resp = requests.get(API_INDEC, timeout=30)
     resp.raise_for_status()
     datos = resp.json()
+
+    # Guardar en disco para futuros cold-starts
+    try:
+        with open(cache_path, 'w', encoding='utf-8') as f:
+            json.dump(datos, f)
+    except Exception:
+        pass
+
     df = pd.DataFrame(datos['data'], columns=COLUMNAS)
     df.set_index('fecha', inplace=True)
     df.index = pd.to_datetime(df.index)
     df = df.astype(float)
-    return df
+
+    _cached_df = df
+    _cache_time = now
+    return _cached_df
 
 
 def compute_isr(df_all, df_pond, clase, salario_col, fecha_inicio):
@@ -141,6 +196,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json; charset=utf-8')
         self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Cache-Control', 'public, s-maxage=43200, stale-while-revalidate=86400')
         self.end_headers()
         self.wfile.write(body)
 

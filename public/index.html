@@ -1062,215 +1062,61 @@
       }
     }
 
-    /* Class detection modal */
-    .class-detection-modal {
-      display: none;
+    /* ── Top Loading Bar ─────────────────────────────────────────── */
+    .top-loading-bar {
       position: fixed;
       top: 0;
       left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--shadow);
-      z-index: 100;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
+      width: 0%;
+      height: 3px;
+      background: linear-gradient(90deg, #38bdf8, #818cf8, #a855f7);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.8), 0 0 6px rgba(129, 140, 248, 0.6);
+      z-index: 99999;
+      transition: width 0.25s ease-out, opacity 0.4s ease-out;
+      pointer-events: none;
+      opacity: 0;
     }
 
-    .class-detection-modal.visible {
-      display: flex;
+    .top-loading-bar.active {
+      opacity: 1;
     }
 
-    .class-detection-modal-content {
-      background: var(--card-hi);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 32px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 16px 48px var(--shadow);
-      animation: slideDown .25s ease;
-    }
-
-    .class-detection-modal-content h2 {
-      font-family: var(--font-display);
-      font-size: 1.55rem;
-      font-weight: 700;
-      letter-spacing: -.02em;
-      margin-bottom: 16px;
-      color: var(--txt-hi);
-    }
-
-    .class-detection-modal-content p {
-      font-size: .85rem;
-      color: var(--txt-2);
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
-    .class-detection-form {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .form-group label {
-      font-family: var(--font-body);
-      font-size: .75rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--txt-2);
-    }
-
-    .form-group input[type="range"] {
-      cursor: pointer;
-    }
-
-    .salary-readout {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      padding-top: 8px;
-    }
-
-    .salary-readout-value {
-      font-family: var(--font-display);
-      font-size: var(--size-subheadline);
-      font-weight: 700;
-      color: var(--amber);
-    }
-
-    .salary-readout-unit {
-      font-size: .75rem;
-      color: var(--txt-2);
-    }
-
-    .class-estimate {
-      background: var(--amber-dim);
-      border: 1px solid var(--amber-border);
-      border-radius: var(--radius-s);
-      padding: 16px;
-      text-align: center;
-    }
-
-    .class-estimate-label {
-      font-size: var(--size-label);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      color: var(--txt-2);
-      margin-bottom: 8px;
-      font-size: var(--size-label);
-    }
-
-    .class-estimate-value {
-      font-family: var(--font-display);
-      font-size: var(--size-headline);
-      font-weight: 400;
-      color: var(--amber);
-      margin-bottom: 4px;
-    }
-
-    .class-estimate-confidence {
-      font-size: var(--size-label);
-      color: var(--txt-2);
-    }
-
-    .class-detection-actions {
-      display: flex;
-      gap: 12px;
-      margin-top: 8px;
-    }
-
-    .class-detection-actions button {
-      flex: 1;
-      padding: 11px 16px;
-      border: none;
-      border-radius: var(--radius-s);
-      font-family: var(--font-body);
-      font-size: .85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background .15s, color .15s, border-color .15s;
-    }
-
-    .class-detection-actions .btn-confirm {
+    /* ── Header Source Indicator ─────────────────────────────────── */
+    .header-source-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
       background: var(--amber);
-      color: var(--txt-dark);
+      margin-right: 6px;
+      vertical-align: middle;
+      transition: background 0.3s ease;
     }
 
-    .class-detection-actions .btn-confirm:hover {
-      background: var(--amber-accent);
+    .header-source-dot.loading {
+      background: #f59e0b;
+      animation: pulse-dot 1.2s infinite ease-in-out;
     }
 
-    .class-detection-actions .btn-cancel {
-      background: var(--card);
-      color: var(--txt);
-      border: 1px solid var(--border);
+    .header-source-dot.ready {
+      background: #10b981;
     }
 
-    .class-detection-actions .btn-cancel:hover {
-      background: var(--hover);
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 0.4; transform: scale(0.85); }
+      50% { opacity: 1; transform: scale(1.15); }
     }
   </style>
 </head>
 
 <body>
+  <div id="top-loading-bar" class="top-loading-bar"></div>
   <div class="app">
-    <!-- Class Detection Modal -->
-    <div class="class-detection-modal" id="classDetectionModal">
-      <div class="class-detection-modal-content">
-        <h2>¿Cuál es tu clase social?</h2>
-        <p>Necesitamos entender tu situación para hacer el análisis más preciso.</p>
-
-        <div class="class-detection-form">
-          <!-- Income Range -->
-          <div class="form-group">
-            <label for="salary-slider">Ingreso mensual aproximado (ARS)</label>
-            <input type="range" id="salary-slider" min="200000" max="5000000" step="50000" value="1000000" />
-            <div class="salary-readout">
-              <span class="salary-readout-value" id="salary-display">$1.000.000</span>
-              <span class="salary-readout-unit">de ingreso</span>
-            </div>
-          </div>
-
-          <!-- Household Members -->
-          <div class="form-group">
-            <label for="household-size">Personas en el hogar que dependen de este ingreso</label>
-            <div class="counter">
-              <button class="counter-btn-minus" type="button" aria-label="Menos personas">−</button>
-              <input type="number" id="household-size" class="counter-input" min="1" max="10" value="2" readonly />
-              <button class="counter-btn-plus" type="button" aria-label="Más personas">+</button>
-            </div>
-          </div>
-
-          <!-- Estimated Class -->
-          <div class="class-estimate">
-            <div class="class-estimate-label">Clase estimada:</div>
-            <div class="class-estimate-value" id="estimated-class">Media</div>
-            <div class="class-estimate-confidence" id="estimated-confidence">~80% de confianza</div>
-          </div>
-
-          <!-- Actions -->
-          <div class="class-detection-actions">
-            <button class="btn-confirm" id="confirm-class">Usar esta clase</button>
-            <button class="btn-cancel" id="change-class">Elegir otra</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- ── Header ─────────────────────────────────────────────────── -->
     <header>
       <h1>¿<span>Ganamos</span> o Perdimos?</h1>
       <span class="header-sub">ISR por Clase Social · Argentina</span>
-      <span class="header-source">Fuente: INDEC via datos.gob.ar</span>
+      <span class="header-source" id="header-source"><span class="header-source-dot loading" id="header-source-dot"></span><span id="header-source-text">Conectando al INDEC...</span></span>
     </header>
 
     <div class="body">
@@ -1294,7 +1140,6 @@
             <button data-val="Alta">Alta</button>
             <button data-val="Media">Media</button>
             <button data-val="Baja">Baja</button>
-            <button data-val="nose">No sé</button>
           </div>
 
 
@@ -1498,9 +1343,6 @@
       clase: null,   // 'Alta' | 'Media' | 'Baja'
       salario: null,   // 'privado' | 'publico' | 'informal' | 'general'
       fecha: null,   // 'YYYY-MM'
-      // No sé clase
-      salarioMonto: 1_000_000,
-      personas: 3,
       // Desde API
       meta: null,
       chart: null,
@@ -1508,232 +1350,169 @@
       showComponentes: false,
     };
 
-    // ── Class Detection Modal ────────────────────────────────────────────────────
-    function initClassDetectionModal() {
-      const modal = $('classDetectionModal');
-      const salarySlider = $('salary-slider');
-      const salaryDisplay = $('salary-display');
-      const householdSize = $('household-size');
-      const estimatedClass = $('estimated-class');
-      const estimatedConfidence = $('estimated-confidence');
-      const confirmBtn = $('confirm-class');
-      const changeBtn = $('change-class');
-
-      // Update salary display
-      function updateSalaryDisplay() {
-        const salary = parseInt(salarySlider.value);
-        salaryDisplay.textContent = '$' + fmt(salary);
-        updateEstimatedClass();
-      }
-
-      // Estimate class based on salary and household size
-      // (Uses canasta boundaries if metadata is available, otherwise static defaults)
-      function updateEstimatedClass() {
-        const salary = parseInt(salarySlider.value);
-        const household = parseInt(householdSize.value);
-        const perCapita = salary / household;
-
-        let className, confidence;
-
-        if (S.meta) {
-          if (perCapita > S.meta.canasta_max * 3.5) {
-            className = 'Alta';
-            confidence = '~75% de confianza';
-          } else if (perCapita < S.meta.canasta_max * 1.2) {
-            className = 'Baja';
-            confidence = '~70% de confianza';
-          } else {
-            className = 'Media';
-            confidence = '~80% de confianza';
-          }
-        } else {
-          // Fallbacks before loadMeta completes
-          if (perCapita > 1_500_000) {
-            className = 'Alta';
-            confidence = '~75% de confianza';
-          } else if (perCapita > 600_000) {
-            className = 'Media';
-            confidence = '~80% de confianza';
-          } else {
-            className = 'Baja';
-            confidence = '~70% de confianza';
-          }
-        }
-
-        estimatedClass.textContent = className;
-        estimatedConfidence.textContent = confidence;
-      }
-
-      // Counter buttons for household size
-      const minusBtn = document.querySelector('.counter-btn-minus');
-      const plusBtn = document.querySelector('.counter-btn-plus');
-
-      minusBtn.addEventListener('click', () => {
-        const current = parseInt(householdSize.value);
-        if (current > 1) {
-          householdSize.value = current - 1;
-          updateEstimatedClass();
-        }
-      });
-
-      plusBtn.addEventListener('click', () => {
-        const current = parseInt(householdSize.value);
-        if (current < 10) {
-          householdSize.value = current + 1;
-          updateEstimatedClass();
-        }
-      });
-
-      // Slider event
-      salarySlider.addEventListener('input', updateSalaryDisplay);
-
-      // Confirm class
-      confirmBtn.addEventListener('click', () => {
-        const selectedClass = estimatedClass.textContent;
-        S.clase = selectedClass;
-        localStorage.setItem('selectedClass', selectedClass);
-        localStorage.setItem('classDetectionModalSeen', 'true');
-        modal.classList.remove('visible');
-        updateClassSelector();
-        renderCanasta(selectedClass);
-        updateResultsContext();
-        maybeAnalyze();
-      });
-
-      // Change class (show selector)
-      changeBtn.addEventListener('click', () => {
-        modal.classList.remove('visible');
-        updateClassSelector();
-      });
-
-      // Initial estimate
-      updateEstimatedClass();
-
-      // Check if user has already gone through modal (stored in localStorage)
-      const hasSeenModal = localStorage.getItem('classDetectionModalSeen');
-      if (hasSeenModal) {
-        modal.classList.remove('visible');
-        // Load saved class if exists
-        const savedClass = localStorage.getItem('selectedClass');
-        if (savedClass) {
-          S.clase = savedClass;
-          updateClassSelector();
-        }
-      } else {
-        modal.classList.add('visible');
-      }
-    }
-
-    // Update the class selector in sidebar to match detected class
+    // Update the class selector in sidebar to match selected class
     function updateClassSelector() {
-      const claseValue = S.clase ? S.clase.toLowerCase() : 'media';
       const seg = $('seg-clase');
+      if (!seg) return;
+      seg.querySelectorAll('button').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-checked', 'false');
+      });
+      if (!S.clase) return;
+      const claseValue = S.clase.toLowerCase();
       const btn = seg.querySelector(`button[data-val="${claseValue}"]`);
       if (btn) {
-        seg.querySelectorAll('button').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-checked', 'false');
-        });
         btn.classList.add('active');
         btn.setAttribute('aria-checked', 'true');
       }
     }
 
-    // ── Utilidades ───────────────────────────────────────────────────────────────
-    const $ = id => document.getElementById(id);
+    // ── Top Loading Bar Helpers ──────────────────────────────────────────────────
+    function setTopLoadingProgress(pct) {
+      const bar = $('top-loading-bar');
+      if (!bar) return;
+      if (pct <= 0) {
+        bar.style.width = '0%';
+        bar.classList.add('active');
+      } else if (pct >= 100) {
+        bar.style.width = '100%';
+        setTimeout(() => {
+          bar.classList.remove('active');
+          setTimeout(() => { bar.style.width = '0%'; }, 350);
+        }, 350);
+      } else {
+        bar.classList.add('active');
+        bar.style.width = `${pct}%`;
+      }
+    }
 
-    function fmt(n) {
-      return new Intl.NumberFormat('es-AR').format(Math.round(n));
-    }
-    function fmtPct(n) {
-      const sign = n >= 0 ? '+' : '';
-      return `${sign}${n.toFixed(1)}%`;
-    }
-    function fmtMonth(dateStr) {
-      // 'YYYY-MM-DD' → 'ene. 2020'
-      const d = new Date(dateStr + 'T00:00:00');
-      return d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' });
+    // ── Date Selectors Helper ───────────────────────────────────────────────────
+    function initDateSelectors() {
+      const selMes = $('select-mes');
+      const selAnio = $('select-anio');
+      if (!selMes || !selAnio || !S.meta) return;
+
+      selMes.innerHTML = '';
+      selAnio.innerHTML = '';
+
+      const meses = [
+        { v: '01', t: 'Enero' }, { v: '02', t: 'Febrero' }, { v: '03', t: 'Marzo' },
+        { v: '04', t: 'Abril' }, { v: '05', t: 'Mayo' }, { v: '06', t: 'Junio' },
+        { v: '07', t: 'Julio' }, { v: '08', t: 'Agosto' }, { v: '09', t: 'Septiembre' },
+        { v: '10', t: 'Octubre' }, { v: '11', t: 'Noviembre' }, { v: '12', t: 'Diciembre' }
+      ];
+
+      meses.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.v;
+        opt.textContent = m.t;
+        selMes.appendChild(opt);
+      });
+
+      const minYear = parseInt(S.meta.fecha_min.substring(0, 4));
+      const maxYear = parseInt(S.meta.fecha_max.substring(0, 4));
+
+      for (let y = maxYear; y >= minYear; y--) {
+        const opt = document.createElement('option');
+        opt.value = String(y);
+        opt.textContent = String(y);
+        selAnio.appendChild(opt);
+      }
+
+      // Default: 4 años atrás o fecha_min
+      const dflt = new Date(S.meta.fecha_max);
+      dflt.setFullYear(dflt.getFullYear() - 4);
+      const dfltYm = dflt.toISOString().substring(0, 7);
+      const minYm = S.meta.fecha_min.substring(0, 7);
+      const targetVal = dfltYm < minYm ? minYm : dfltYm;
+
+      const [initY, initM] = targetVal.split('-');
+      selAnio.value = initY;
+      selMes.value = initM;
+      S.fecha = `${initY}-${initM}`;
+
+      function onDateChange() {
+        S.fecha = `${selAnio.value}-${selMes.value}`;
+        updateResultsContext();
+        maybeAnalyze();
+      }
+
+      selMes.onchange = onDateChange;
+      selAnio.onchange = onDateChange;
+
+      // Connect preset buttons
+      const presetBtns = document.querySelectorAll('.preset-btn');
+      presetBtns.forEach(btn => {
+        btn.onclick = () => {
+          const ym = btn.getAttribute('data-ym');
+          if (ym) {
+            const [py, pm] = ym.split('-');
+            if (selAnio.querySelector(`option[value="${py}"]`)) selAnio.value = py;
+            if (selMes.querySelector(`option[value="${pm}"]`)) selMes.value = pm;
+            S.fecha = ym;
+            updateResultsContext();
+            maybeAnalyze();
+          }
+        };
+      });
     }
 
     // ── Init metadata ────────────────────────────────────────────────────────────
     async function loadMeta() {
-      try {
-        const r = await fetch('/api/index');
-        S.meta = await r.json();
-        
-        // Configurar date dropdowns (select-mes & select-anio)
-        const selMes = $('select-mes');
-        const selAnio = $('select-anio');
-
-        if (selMes && selAnio) {
-          selMes.innerHTML = '';
-          selAnio.innerHTML = '';
-
-          const meses = [
-            { v: '01', t: 'Enero' }, { v: '02', t: 'Febrero' }, { v: '03', t: 'Marzo' },
-            { v: '04', t: 'Abril' }, { v: '05', t: 'Mayo' }, { v: '06', t: 'Junio' },
-            { v: '07', t: 'Julio' }, { v: '08', t: 'Agosto' }, { v: '09', t: 'Septiembre' },
-            { v: '10', t: 'Octubre' }, { v: '11', t: 'Noviembre' }, { v: '12', t: 'Diciembre' }
-          ];
-
-          meses.forEach(m => {
-            const opt = document.createElement('option');
-            opt.value = m.v;
-            opt.textContent = m.t;
-            selMes.appendChild(opt);
-          });
-
-          const minYear = parseInt(S.meta.fecha_min.substring(0, 4));
-          const maxYear = parseInt(S.meta.fecha_max.substring(0, 4));
-
-          for (let y = maxYear; y >= minYear; y--) {
-            const opt = document.createElement('option');
-            opt.value = String(y);
-            opt.textContent = String(y);
-            selAnio.appendChild(opt);
-          }
-
-          // Default: 4 años atrás o fecha_min
-          const dflt = new Date(S.meta.fecha_max);
-          dflt.setFullYear(dflt.getFullYear() - 4);
-          const dfltYm = dflt.toISOString().substring(0, 7);
-          const minYm = S.meta.fecha_min.substring(0, 7);
-          const targetVal = dfltYm < minYm ? minYm : dfltYm;
-
-          const [initY, initM] = targetVal.split('-');
-          selAnio.value = initY;
-          selMes.value = initM;
-          S.fecha = `${initY}-${initM}`;
-
-          function onDateChange() {
-            S.fecha = `${selAnio.value}-${selMes.value}`;
-            updateResultsContext();
-            maybeAnalyze();
-          }
-
-          selMes.addEventListener('change', onDateChange);
-          selAnio.addEventListener('change', onDateChange);
-
-          // Connect preset buttons
-          const presetBtns = document.querySelectorAll('.preset-btn');
-          presetBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-              const ym = btn.getAttribute('data-ym');
-              if (ym) {
-                const [py, pm] = ym.split('-');
-                if (selAnio.querySelector(`option[value="${py}"]`)) selAnio.value = py;
-                if (selMes.querySelector(`option[value="${pm}"]`)) selMes.value = pm;
-                S.fecha = ym;
-                updateResultsContext();
-                maybeAnalyze();
-              }
-            });
-          });
+      setTopLoadingProgress(18);
+      const progressTimer = setInterval(() => {
+        const bar = $('top-loading-bar');
+        if (!bar) return;
+        const cur = parseFloat(bar.style.width) || 18;
+        if (cur < 85) {
+          bar.style.width = `${cur + Math.random() * 12}%`;
         }
-        renderCanasta(S.clase || 'Media');
+      }, 350);
+
+      try {
+        // Verificar caché local en sessionStorage
+        let meta = null;
+        try {
+          const cached = sessionStorage.getItem('indec_meta_cache_v1');
+          if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && (Date.now() - parsed._ts) < 12 * 3600 * 1000) {
+              meta = parsed.data;
+            }
+          }
+        } catch (_) {}
+
+        if (!meta) {
+          const r = await fetch('/api/index');
+          meta = await r.json();
+          try {
+            sessionStorage.setItem('indec_meta_cache_v1', JSON.stringify({ data: meta, _ts: Date.now() }));
+          } catch (_) {}
+        }
+
+        S.meta = meta;
+        clearInterval(progressTimer);
+        setTopLoadingProgress(100);
+
+        const dot = $('header-source-dot');
+        const text = $('header-source-text');
+        if (dot) {
+          dot.className = 'header-source-dot ready';
+        }
+        if (text) {
+          text.textContent = 'Fuente: INDEC via datos.gob.ar';
+        }
+
+        initDateSelectors();
+
+        if (S.clase) {
+          renderCanasta(S.clase);
+        }
         updateResultsContext();
         maybeAnalyze();
       } catch (e) {
+        clearInterval(progressTimer);
+        setTopLoadingProgress(100);
         console.warn('No se pudo cargar metadata:', e);
       }
     }
@@ -1805,30 +1584,11 @@
       $('canasta-panel').classList.add('visible');
     }
 
-    function setupNoSePanel() {
-      const slider = $('slider-salario');
-      const btnMas = $('btn-mas');
-      const btnMenos = $('btn-menos');
-
-      slider.addEventListener('input', () => {
-        S.salarioMonto = +slider.value;
-        $('lbl-salario').textContent = '$' + fmt(S.salarioMonto);
-        updateNoSeClase();
-        maybeAnalyze();
-      });
-
-      btnMas.addEventListener('click', () => {
-        if (S.personas < 10) { S.personas++; $('lbl-personas').textContent = S.personas; updateNoSeClase(); maybeAnalyze(); }
-      });
-      btnMenos.addEventListener('click', () => {
-        if (S.personas > 1) { S.personas--; $('lbl-personas').textContent = S.personas; updateNoSeClase(); maybeAnalyze(); }
-      });
-    }
 
     // ── Análisis ─────────────────────────────────────────────────────────────
     let debounceTimer = null;
     function maybeAnalyze() {
-      if (!S.clase || !S.salario || !S.fecha) return;
+      if (!S.clase || !S.salario || !S.fecha || !S.meta) return;
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(analyze, 300);
     }
@@ -2267,20 +2027,12 @@
 
     // ── Bootstrap ────────────────────────────────────────────────────────────
     async function main() {
-      await loadMeta();
-      initClassDetectionModal();
-
-      // Clase
+      // 1. Conectar controles de inmediato para interacción instantánea
       setupSeg('seg-clase', val => {
-        const isNose = val === 'nose';
-        if (!isNose) {
-          S.clase = val;
-          renderCanasta(val);
-          updateResultsContext();
-          maybeAnalyze();
-        } else {
-          $('classDetectionModal').classList.add('visible');
-        }
+        S.clase = val;
+        renderCanasta(val);
+        updateResultsContext();
+        maybeAnalyze();
       });
 
       // Salario (Origen de ingresos)
@@ -2309,6 +2061,9 @@
       }
 
       $('fecha-group').style.display = '';
+
+      // 2. Cargar metadatos del INDEC en segundo plano con barra de carga
+      await loadMeta();
     }
 
     main();

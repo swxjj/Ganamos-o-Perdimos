@@ -6,10 +6,13 @@
       "use": "@vercel/python",
       "config": { "includeFiles": ["ponderaciones.xlsx"] }
     },
-    { "src": "public/**",    "use": "@vercel/static"  }
+    { "src": "public/**",    "use": "@vercel/static"  },
+    { "src": "index.html",   "use": "@vercel/static"  }
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/index.py" },
-    { "src": "/(.*)",     "dest": "/public/$1"    }
+    { "src": "/api",      "dest": "/api/index.py" },
+    { "src": "/",         "dest": "/public/index.html" },
+    { "src": "/(.*)",     "dest": "/public/$1" }
   ]
 }

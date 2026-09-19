@@ -1457,6 +1457,64 @@
       });
     }
 
+    // ── Ponderaciones por defecto y Endpoint Directo INDEC ───────────────────────
+    const DEFAULT_PONDERACIONES = {
+      'Alta': {
+        'Alimentos y bebidas no alcohólicas': 0.199154, 'Bebidas alcohólicas y tabaco': 0.025846,
+        'Prendas de vestir y calzado': 0.06, 'Vivienda, agua, electricidad, gas y otros combustibles': 0.15,
+        'Equipamiento y mantenimiento del hogar': 0.062, 'Salud': 0.075, 'Transporte': 0.176619,
+        'Comunicaciones': 0.045381, 'Recreación y cultura': 0.04615, 'Educación': 0.057,
+        'Restaurantes y hoteles': 0.05685, 'Bienes y servicios varios': 0.046
+      },
+      'Media': {
+        'Alimentos y bebidas no alcohólicas': 0.242083, 'Bebidas alcohólicas y tabaco': 0.031417,
+        'Prendas de vestir y calzado': 0.0695, 'Vivienda, agua, electricidad, gas y otros combustibles': 0.162,
+        'Equipamiento y mantenimiento del hogar': 0.053, 'Salud': 0.064, 'Transporte': 0.166674,
+        'Comunicaciones': 0.042826, 'Recreación y cultura': 0.038981, 'Educación': 0.0355,
+        'Restaurantes y hoteles': 0.048019, 'Bienes y servicios varios': 0.046
+      },
+      'Baja': {
+        'Alimentos y bebidas no alcohólicas': 0.296519, 'Bebidas alcohólicas y tabaco': 0.038481,
+        'Prendas de vestir y calzado': 0.081, 'Vivienda, agua, electricidad, gas y otros combustibles': 0.1635,
+        'Equipamiento y mantenimiento del hogar': 0.045, 'Salud': 0.043, 'Transporte': 0.145989,
+        'Comunicaciones': 0.037511, 'Recreación y cultura': 0.035172, 'Educación': 0.024,
+        'Restaurantes y hoteles': 0.043328, 'Bienes y servicios varios': 0.0465
+      }
+    };
+
+    const API_INDEC_DIRECT = (
+      "https://apis.datos.gob.ar/series/api/series/" +
+      "?ids=145.3_INGNACNAL_DICI_M_15,149.1_TL_INDIIOS_OCTU_0_21," +
+      "150.1_CSTA_BATAL_0_D_20,146.3_IALIMENNAL_DICI_M_45," +
+      "146.3_IBEBIDANAL_DICI_M_39,146.3_IPRENDANAL_DICI_M_35," +
+      "146.3_IVIVIENNAL_DICI_M_52,146.3_IEQUIPANAL_DICI_M_46," +
+      "146.3_ISALUDNAL_DICI_M_18,146.3_ITRANSPNAL_DICI_M_23," +
+      "146.3_ICOMUNINAL_DICI_M_27,146.3_IRECREANAL_DICI_M_31," +
+      "146.3_IEDUCACNAL_DICI_M_22,146.3_IRESTAUNAL_DICI_M_33," +
+      "146.3_IBIENESNAL_DICI_M_36,149.1_SOR_PRIADO_OCTU_0_25," +
+      "149.1_SOR_PUBICO_OCTU_0_14,149.1_SOR_PRIADO_OCTU_0_28" +
+      "&limit=5000&start_date=2016-12-01&format=json"
+    );
+
+    async function fetchMetaDirectoIndec() {
+      const resp = await fetch(API_INDEC_DIRECT, { signal: AbortSignal.timeout(12000) });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} al conectar a INDEC`);
+      const json = await resp.json();
+      if (!json || !json.data || !json.data.length) throw new Error('Datos de INDEC vacíos');
+
+      window._indec_raw_data = json.data;
+
+      const fechas = json.data.map(row => row[0]);
+      const canastaMax = Math.max(...json.data.map(row => Number(row[3]) || 0));
+
+      return {
+        canasta_max: canastaMax,
+        fecha_min: fechas[0],
+        fecha_max: fechas[fechas.length - 1],
+        ponderaciones: DEFAULT_PONDERACIONES
+      };
+    }
+
     // ── Init metadata ────────────────────────────────────────────────────────────
     async function loadMeta() {
       setTopLoadingProgress(18);
@@ -1470,25 +1528,45 @@
       }, 350);
 
       try {
-        // Verificar caché local en sessionStorage
+        // 1. Verificar caché local válido en sessionStorage
         let meta = null;
         try {
-          const cached = sessionStorage.getItem('indec_meta_cache_v1');
+          const cached = sessionStorage.getItem('indec_meta_cache_v2');
           if (cached) {
             const parsed = JSON.parse(cached);
-            if (parsed && (Date.now() - parsed._ts) < 12 * 3600 * 1000) {
+            if (parsed && parsed.data && parsed.data.fecha_min && (Date.now() - parsed._ts) < 12 * 3600 * 1000) {
               meta = parsed.data;
             }
           }
         } catch (_) {}
 
+        // 2. Intentar backend /api/index
         if (!meta) {
-          const r = await fetch('/api/index');
-          meta = await r.json();
           try {
-            sessionStorage.setItem('indec_meta_cache_v1', JSON.stringify({ data: meta, _ts: Date.now() }));
-          } catch (_) {}
+            const r = await fetch('/api/index', { signal: AbortSignal.timeout(5000) });
+            if (r.ok) {
+              const res = await r.json();
+              if (res && res.fecha_min && !res.error) {
+                meta = res;
+              }
+            }
+          } catch (backendErr) {
+            console.warn('Backend local /api/index no disponible, conectando directo a INDEC:', backendErr);
+          }
         }
+
+        // 3. Fallback directo a la API de datos.gob.ar
+        if (!meta) {
+          meta = await fetchMetaDirectoIndec();
+        }
+
+        if (!meta || !meta.fecha_min) {
+          throw new Error('No se pudieron obtener los datos de INDEC');
+        }
+
+        try {
+          sessionStorage.setItem('indec_meta_cache_v2', JSON.stringify({ data: meta, _ts: Date.now() }));
+        } catch (_) {}
 
         S.meta = meta;
         clearInterval(progressTimer);
@@ -1496,24 +1574,34 @@
 
         const dot = $('header-source-dot');
         const text = $('header-source-text');
-        if (dot) {
-          dot.className = 'header-source-dot ready';
-        }
-        if (text) {
-          text.textContent = 'Fuente: INDEC via datos.gob.ar';
-        }
+        if (dot) dot.className = 'header-source-dot ready';
+        if (text) text.textContent = 'Fuente: INDEC via datos.gob.ar';
 
         initDateSelectors();
 
-        if (S.clase) {
-          renderCanasta(S.clase);
-        }
+        if (S.clase) renderCanasta(S.clase);
         updateResultsContext();
         maybeAnalyze();
       } catch (e) {
         clearInterval(progressTimer);
         setTopLoadingProgress(100);
         console.warn('No se pudo cargar metadata:', e);
+        try { sessionStorage.removeItem('indec_meta_cache_v2'); } catch (_) {}
+        const dot = $('header-source-dot');
+        const text = $('header-source-text');
+        if (dot) dot.className = 'header-source-dot error';
+        if (text) {
+          text.innerHTML = '<span style="color:var(--loss)">Error al conectar con INDEC.</span> <a href="#" id="retry-indec" style="color:var(--blue);text-decoration:underline;margin-left:6px;">Reintentar</a>';
+          const retryBtn = $('retry-indec');
+          if (retryBtn) {
+            retryBtn.onclick = (ev) => {
+              ev.preventDefault();
+              text.textContent = 'Reintentando conexión...';
+              if (dot) dot.className = 'header-source-dot';
+              loadMeta();
+            };
+          }
+        }
       }
     }
 
@@ -1633,6 +1721,86 @@
       s3.className = 'loading-step done';
     }
 
+    async function computeIsrClientSide(clase, salarioKey, fechaInicio) {
+      if (!window._indec_raw_data) {
+        const resp = await fetch(API_INDEC_DIRECT, { signal: AbortSignal.timeout(12000) });
+        const json = await resp.json();
+        window._indec_raw_data = json.data;
+      }
+      const raw = window._indec_raw_data;
+      const salarioColIdx = {
+        'privado': 16,
+        'publico': 17,
+        'informal': 18,
+        'general': 2
+      }[salarioKey.toLowerCase()] || 2;
+
+      const rubroCols = [
+        'Alimentos y bebidas no alcohólicas',
+        'Bebidas alcohólicas y tabaco',
+        'Prendas de vestir y calzado',
+        'Vivienda, agua, electricidad, gas y otros combustibles',
+        'Equipamiento y mantenimiento del hogar',
+        'Salud',
+        'Transporte',
+        'Comunicaciones',
+        'Recreación y cultura',
+        'Educación',
+        'Restaurantes y hoteles',
+        'Bienes y servicios varios'
+      ];
+
+      const pesos = (S.meta && S.meta.ponderaciones && S.meta.ponderaciones[clase]) || DEFAULT_PONDERACIONES[clase];
+
+      const filtered = raw.filter(r => r[0] >= fechaInicio && r[salarioColIdx] !== null && r[salarioColIdx] !== undefined);
+      if (!filtered.length) throw new Error(`No hay datos desde ${fechaInicio}`);
+
+      let baseIpcClase = 0;
+      for (let i = 0; i < 12; i++) {
+        const rubroVal = Number(filtered[0][4 + i]) || 0;
+        baseIpcClase += rubroVal * (pesos[rubroCols[i]] || 0);
+      }
+      const baseSalario = Number(filtered[0][salarioColIdx]) || 1;
+
+      const fechas = [];
+      const isr = [];
+      const ipc = [];
+      const isal = [];
+
+      for (const row of filtered) {
+        let rowIpc = 0;
+        for (let i = 0; i < 12; i++) {
+          const rubroVal = Number(row[4 + i]) || 0;
+          rowIpc += rubroVal * (pesos[rubroCols[i]] || 0);
+        }
+        const rowIpcNorm = (rowIpc / baseIpcClase) * 100;
+        const rowSalNorm = (Number(row[salarioColIdx]) / baseSalario) * 100;
+        const rowIsr = (rowSalNorm / rowIpcNorm) * 100;
+
+        fechas.push(row[0]);
+        ipc.push(Math.round(rowIpcNorm * 100) / 100);
+        isal.push(Math.round(rowSalNorm * 100) / 100);
+        isr.push(Math.round(rowIsr * 100) / 100);
+      }
+
+      const ultimoIsr = isr[isr.length - 1];
+      const canastaMax = Math.max(...raw.map(r => Number(r[3]) || 0));
+
+      return {
+        fechas,
+        isr,
+        ipc,
+        isal,
+        fecha_min: raw[0][0],
+        fecha_max: raw[raw.length - 1][0],
+        fecha_datos: fechas[fechas.length - 1],
+        canasta_max: canastaMax,
+        ultimo_isr: ultimoIsr,
+        clase,
+        salario_key: salarioKey
+      };
+    }
+
     async function analyze() {
       showLoading(true);
       const animationPromise = animateLoadingSteps();
@@ -1640,9 +1808,26 @@
       const url = `/api/index?clase=${encodeURIComponent(S.clase)}&salario=${encodeURIComponent(S.salario)}&fecha=${S.fecha}-01`;
 
       try {
-        const [r] = await Promise.all([fetch(url), animationPromise]);
-        const data = await r.json();
-        if (data.error) throw new Error(data.error);
+        let data = null;
+        try {
+          const [r] = await Promise.all([
+            fetch(url, { signal: AbortSignal.timeout(6000) }),
+            animationPromise
+          ]);
+          if (r.ok) {
+            const res = await r.json();
+            if (res && !res.error && res.isr) data = res;
+          }
+        } catch (apiErr) {
+          console.warn('Backend local /api/index no disponible, usando cálculo client-side:', apiErr);
+        }
+
+        if (!data) {
+          data = await computeIsrClientSide(S.clase, S.salario, S.fecha + '-01');
+        }
+
+        if (!data) throw new Error('No se pudieron calcular los resultados');
+
         renderResults(data);
         showLoading(false);
         showResults(true);

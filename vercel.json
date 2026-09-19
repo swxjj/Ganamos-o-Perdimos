@@ -1,7 +1,11 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/index.py", "use": "@vercel/python" },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": { "includeFiles": ["ponderaciones.xlsx"] }
+    },
     { "src": "public/**",    "use": "@vercel/static"  }
   ],
   "routes": [

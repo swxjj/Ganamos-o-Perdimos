@@ -67,18 +67,70 @@ def _get_cache_path():
 
 # ── Helpers de datos ─────────────────────────────────────────────────────────
 
+DEFAULT_PONDERACIONES = {
+    'Alta': {
+        'Alimentos y bebidas no alcohólicas': 0.19915427479057132,
+        'Bebidas alcohólicas y tabaco': 0.0258457252094287,
+        'Prendas de vestir y calzado': 0.06,
+        'Vivienda, agua, electricidad, gas y otros combustibles': 0.15,
+        'Equipamiento y mantenimiento del hogar': 0.062,
+        'Salud': 0.075,
+        'Transporte': 0.1766189408349619,
+        'Comunicaciones': 0.045381059165038096,
+        'Recreación y cultura': 0.04614952420223208,
+        'Educación': 0.057,
+        'Restaurantes y hoteles': 0.05685047579776791,
+        'Bienes y servicios varios': 0.046
+    },
+    'Media': {
+        'Alimentos y bebidas no alcohólicas': 0.242083085134317,
+        'Bebidas alcohólicas y tabaco': 0.031416914865683335,
+        'Prendas de vestir y calzado': 0.0695,
+        'Vivienda, agua, electricidad, gas y otros combustibles': 0.162,
+        'Equipamiento y mantenimiento del hogar': 0.053,
+        'Salud': 0.064,
+        'Transporte': 0.16667418065281314,
+        'Comunicaciones': 0.04282581934718685,
+        'Recreación y cultura': 0.03898066607373001,
+        'Educación': 0.0355,
+        'Restaurantes y hoteles': 0.04801933392626999,
+        'Bienes y servicios varios': 0.046
+    },
+    'Baja': {
+        'Alimentos y bebidas no alcohólicas': 0.29651858691040617,
+        'Bebidas alcohólicas y tabaco': 0.03848141308959384,
+        'Prendas de vestir y calzado': 0.081,
+        'Vivienda, agua, electricidad, gas y otros combustibles': 0.1635,
+        'Equipamiento y mantenimiento del hogar': 0.045,
+        'Salud': 0.043,
+        'Transporte': 0.14598907947394374,
+        'Comunicaciones': 0.037510920526056264,
+        'Recreación y cultura': 0.03517221019296329,
+        'Educación': 0.024,
+        'Restaurantes y hoteles': 0.043327789807036714,
+        'Bienes y servicios varios': 0.0465
+    }
+}
+
 _cached_pond = None
 
 def load_ponderaciones():
-    """Carga el Excel de ponderaciones desde la raíz del proyecto con caché en memoria."""
+    """Carga el Excel de ponderaciones con fallback a diccionario por defecto."""
     global _cached_pond
     if _cached_pond is not None:
         return _cached_pond
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     path = os.path.join(root, 'ponderaciones.xlsx')
-    df = pd.read_excel(path)
-    df.set_index('Rubro', inplace=True)
-    _cached_pond = df
+    if os.path.exists(path):
+        try:
+            df = pd.read_excel(path)
+            df.set_index('Rubro', inplace=True)
+            _cached_pond = df
+            return _cached_pond
+        except Exception:
+            pass
+    _cached_pond = pd.DataFrame(DEFAULT_PONDERACIONES)
+    _cached_pond.index.name = 'Rubro'
     return _cached_pond
 
 
@@ -110,7 +162,7 @@ def fetch_indec():
             pass
 
     # 3. Descarga remota
-    resp = requests.get(API_INDEC, timeout=30)
+    resp = requests.get(API_INDEC, timeout=12)
     resp.raise_for_status()
     datos = resp.json()
 

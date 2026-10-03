@@ -46,3 +46,10 @@ sus fuentes, ponderaciones, normalización, relleno de huecos y corte temporal.
 La UI elimina la confianza porcentual sin fundamento del orientador y conserva
 sus umbrales con los datos cargados. No ofrece una sugerencia si falta la fuente.
 No se realizó una auditoría formal WCAG ni pruebas en dispositivos físicos o Safari.
+
+## Integración con cambios concurrentes
+
+Se conservan las instrucciones AGENTS, Makefile, ignores y documentación de
+arranque incorporados por `72e4b90`. Se resolvió la documentación de la UI y se
+extendió `scripts/check.py` para que `make check` también valide el JavaScript
+externo de `public/app.js`, además de cualquier script inline.

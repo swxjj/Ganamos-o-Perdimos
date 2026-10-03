@@ -2,5 +2,23 @@
 .vercel/
 .impeccable/
 
+# Python: entornos y cachés locales
+venv/
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Configuración privada; conservar ejemplos sin secretos
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Archivos locales del sistema y editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

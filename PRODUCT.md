@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Existing implementation: HTML/CSS/JavaScript frontend (Chart.js for visualization) + Python backend (Vercel serverless API + pandas data processing).
+Existing implementation: HTML/CSS/JavaScript frontend (native SVG charts and canvas PNG export) + Python backend (Vercel serverless API + pandas data processing).
 
 ## Users
 
@@ -28,7 +28,7 @@ Class-aware inflation analysis. While aggregate inflation data exists everywhere
 
 Users access the tool to perform ad-hoc financial analysis:
 - Select a date range (historical data from INDEC: 2016-present)
-- Choose employment type (private equity, government jobs, informal)
+- Choose employment type (registered private-sector work, government jobs, informal work)
 - View inflation impact on their spending category distribution
 - Confirm whether their sector's salary index beat the cost of living
 
@@ -55,7 +55,7 @@ None established yet. The product is live but without committed voice, tagline, 
 ## Evidence on Hand
 
 Working implementation: 
-- [public/index.html](public/index.html) — live UI with dark theme, Chart.js visualizations, responsive layout
+- [public/index.html](public/index.html) — semantic interface with a light editorial design, responsive layout, SVG charts and accessible data tables
 - [api/index.py](api/index.py) — serverless backend fetching and processing INDEC data  
 - [app_inflacion.py](app_inflacion.py) — Streamlit prototype (reference)
 

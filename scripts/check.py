@@ -16,6 +16,7 @@ class InlineScripts(HTMLParser):
     def __init__(self):
         super().__init__()
         self.scripts = []
+        self.local_scripts = []
         self.parts = []
         self.kind = None
 
@@ -23,6 +24,9 @@ class InlineScripts(HTMLParser):
         if tag == "script":
             attrs = dict(attrs)
             kind = attrs.get("type", "text/javascript")
+            src = attrs.get("src", "")
+            if src and not src.startswith(("http:", "https:", "//")):
+                self.local_scripts.append(src)
             self.kind = (
                 kind
                 if "src" not in attrs
@@ -56,6 +60,8 @@ def main():
     json.loads((ROOT / "vercel.json").read_text(encoding="utf-8"))
     for name in (
         "public/index.html",
+        "public/styles.css",
+        "public/app.js",
         "public/Helvetica-Bold.ttf",
         "ponderaciones.xlsx",
     ):
@@ -76,7 +82,15 @@ def main():
                 path = Path(directory) / f"inline-{index}{extension}"
                 path.write_text(source, encoding="utf-8")
                 subprocess.run([node, "--check", str(path)], check=True)
-        print(f"OK: sintaxis de {len(parser.scripts)} scripts JavaScript inline.")
+        for src in parser.local_scripts:
+            path = (ROOT / "public" / src.lstrip("/")).resolve()
+            if not path.is_relative_to((ROOT / "public").resolve()):
+                raise ValueError(f"Script fuera de public/: {src}")
+            subprocess.run([node, "--check", str(path)], check=True)
+        print(
+            f"OK: sintaxis de {len(parser.scripts)} scripts JavaScript inline "
+            f"y {len(parser.local_scripts)} scripts locales."
+        )
     print(
         "Check estático terminado; no verifica tests funcionales, lint ni build Vercel."
     )

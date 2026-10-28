@@ -40,7 +40,8 @@ API_INDEC = (
     "146.3_IEDUCACNAL_DICI_M_22,146.3_IRESTAUNAL_DICI_M_33,"
     "146.3_IBIENESNAL_DICI_M_36,149.1_SOR_PRIADO_OCTU_0_25,"
     "149.1_SOR_PUBICO_OCTU_0_14,149.1_SOR_PRIADO_OCTU_0_28"
-    "&limit=5000&start_date=2016-12-01&format=json"
+    # La API de Series de Tiempo acepta como máximo 1000 observaciones por serie.
+    "&limit=1000&start_date=2016-12-01&format=json"
 )
 
 # Mapa: query param → columna en el DataFrame

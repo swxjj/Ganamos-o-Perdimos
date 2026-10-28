@@ -2,6 +2,7 @@ from http.server import BaseHTTPRequestHandler
 import json
 import math
 import os
+from io import StringIO
 import pandas as pd
 import requests
 from urllib.parse import parse_qs, urlparse
@@ -54,6 +55,43 @@ SALARIO_MAP = {
 
 CLASES_VALIDAS = {'Alta', 'Media', 'Baja'}
 
+# La API de series actualmente entrega estos dos rubros sin valores. Recuperar
+# las mismas series y fechas desde la distribución CSV oficial vinculada a su metadata.
+IPC_CSV = (
+    "https://infra.datos.gob.ar/catalog/sspm/dataset/145/distribution/145.5/"
+    "download/indice-precios-al-consumidor-apertura-por-capitulos-base-diciembre-2016-mensual.csv"
+)
+IPC_RECOVERY = {
+    'Recreación y cultura': 'ipc_recreacion_cultura_nacional',
+    'Restaurantes y hoteles': 'ipc_restaurantes_hoteles_nacional',
+}
+
+
+def recover_empty_ipc(df):
+    """Recupera series enteramente vacías desde la distribución oficial, por fecha exacta."""
+    missing = {
+        column: source
+        for column, source in IPC_RECOVERY.items()
+        if df[column].isna().all()
+    }
+    if not missing:
+        return df
+
+    response = requests.get(IPC_CSV, timeout=15)
+    response.raise_for_status()
+    source = pd.read_csv(StringIO(response.text), index_col='indice_tiempo')
+    source.index = pd.to_datetime(source.index)
+    if source.index.has_duplicates:
+        raise ValueError("El CSV oficial del IPC contiene fechas duplicadas.")
+
+    for column, field in missing.items():
+        values = pd.to_numeric(source[field], errors='coerce').reindex(df.index)
+        df[column] = values.where((values > 0) & (values < float('inf')))
+
+    if any(df[column].isna().all() for column in missing):
+        raise ValueError("Faltan series de IPC en la API y en su CSV oficial.")
+    return df
+
 # ── Helpers de datos ─────────────────────────────────────────────────────────
 
 def load_ponderaciones():
@@ -74,7 +112,7 @@ def fetch_indec():
     df.set_index('fecha', inplace=True)
     df.index = pd.to_datetime(df.index)
     df = df.astype(float)
-    return df
+    return recover_empty_ipc(df)
 
 
 def compute_isr(df_all, df_pond, clase, salario_col, fecha_inicio):
@@ -124,6 +162,8 @@ def compute_isr(df_all, df_pond, clase, salario_col, fecha_inicio):
 
     # Eliminar cualquier NaN residual
     df_isr = df_isr.dropna(subset=['ISR', 'ISAL', 'IPC Clase'])
+    if df_isr.empty:
+        raise ValueError("No hay datos completos de precios y salarios para este período.")
 
     df_isr = df_isr.reset_index()
     df_isr['fecha'] = df_isr['fecha'].dt.strftime('%Y-%m-%d')
